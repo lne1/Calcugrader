@@ -548,40 +548,6 @@ cleanupFloatAddition:
     div.s $f4, $f4, $f13
     jr $ra
 
-# this is just for debugging (for now)
-printSomething:
-    li $t1, 0 # offset for loading
-    lb $t0, buffer($t1) # load the first input byte to $t0
-
-    li $v0, 11
-    move $a0, $t0
-    syscall
-
-    li $t1, 1
-    lb $t0, buffer($t1)
-    li $v0, 1
-    move $a0, $t0
-    syscall
-
-    li $t1, 2
-    lb $t0, buffer($t1)
-    li $v0, 1
-    move $a0, $t0
-    syscall
-
-    li $t1, 3
-    lb $t0, buffer($t1)
-    li $v0, 1
-    move $a0, $t0
-    syscall
-
-    li $t1, 4
-    lb $t0, buffer($t1)
-    li $v0, 1
-    move $a0, $t0
-    syscall
-    j exit
-
 exitError:
     li $v0, 55 # syscall 55 is message dialog
     la $a0, errorMess # $a0 is the address for printing
