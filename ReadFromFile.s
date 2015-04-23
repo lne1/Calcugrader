@@ -8,6 +8,8 @@ buffer: .space 1024
 option1Output: .asciiz "Your GPA is: "
     .globl option2Output
 option2Output: .asciiz "You need a GPA of: "
+    .globl option3Output
+option3Output: .asciiz "Predicted GPA at graduation: "
     .globl errorMess
 errorMess: .asciiz "Error encountered in input, exiting"
 
@@ -244,7 +246,132 @@ option2Calculation:
 
 parseOption3:
     li $s7, 3 # remember that the chosen option is 3
+
+parseOption3Data:
+    li $s3, 2 # third character
+    lb $t2, buffer($s3) # load the first digit of the GPA (first character of the line) to $t2
+    li $t8, 0 # start the count at 0
+    sw $t8, -88($fp)
+    lwc1 $f14, -88($fp)
+    cvt.s.w $f3, $f14
+    li $t8, 1 # first digit is in the ones-column
+    sw $t8, -88($fp)
+    lwc1 $f14, -88($fp)
+    cvt.s.w $f4, $f14
+    jal asciiToFloat # translate the first digit to a number
     
+    li $s3, 4 # fifth character
+    lb $t2, buffer($s3) # load the second digit of the GPA (third character of the line) to $t2
+    jal asciiToFloat # translate the second digit to a number
+
+    li $s3, 5 # sixth character
+    lb $t2, buffer($s3) # load the third digit of the GPA (fourth character of the line) to $t2
+    jal asciiToFloat # translate the third digit to a number
+
+    mov.s $f1, $f3 # save the number in $f1
+
+    li $s3, 8 # ninth character
+    lb $t2, buffer($s3) # load the ninth character
+    beq $t2, 10, singleDigit3Hours # ninth character is a line ending, so the number of hours only has 1 digit
+    j doubleDigit3Hours # otherwise, assume that it's a 2-digit number of hours
+
+singleDigit3Hours:
+    subi $s3, $s3, 1 # previous character
+    lb $t2, buffer($s3) # load the previous character (only digit in the number of hours) to $t2
+    li $t3, 0 # initialize the count to 0
+    li $t4, 1 # digit is in the ones-column
+    jal asciiToInteger # add the digit to the hours count sum
+    
+    move $s7, $t3 # set the permanent register for the number of hours taken
+    addi $s3, $s3, 2 # move to the next line
+    j parseFuture3Data
+
+doubleDigit3Hours:
+    subi $s3, $s3, 1 # previous character
+    lb $t2, buffer($s3) # load the previous character (first digit in the number of hours) to $t2 
+    li $t3, 0 # initialize the count to 0
+    li $t4, 10 # first digit is in the tens-column
+    jal asciiToInteger # add the digit to the hours count sum
+    
+    addi $s3, $s3, 1 # second character
+    lb $t2, buffer($s3) # load the second character (second digit in the number of hours) to $t2
+    jal asciiToInteger # add the digit to the hours count sum
+    
+    move $s7, $t3 # set the permanent register for the number of hours
+    addi $s3, $s3, 2 # move to the next line
+    j parseFuture3Data
+
+parseFuture3Data:
+    lb $t2, buffer($s3) # load the first digit of the GPA (first character of the line) to $t2
+    li $t8, 0 # start the count at 0
+    sw $t8, -88($fp)
+    lwc1 $f14, -88($fp)
+    cvt.s.w $f3, $f14
+    li $t8, 1 # first digit is in the ones-column
+    sw $t8, -88($fp)
+    lwc1 $f14, -88($fp)
+    cvt.s.w $f4, $f14
+    jal asciiToFloat # translate the first digit to a number
+    
+    addi $s3, $s3, 2 # next digit
+    lb $t2, buffer($s3) # load the second digit of the GPA (third character of the line) to $t2
+    jal asciiToFloat # translate the second digit to a number
+
+    addi $s3, $s3, 1 # next digit
+    lb $t2, buffer($s3) # load the third digit of the GPA (fourth character of the line) to $t2
+    jal asciiToFloat # translate the third digit to a number
+
+    mov.s $f0, $f3 # save the number in $f0
+
+    addi $s3, $s3, 3 # second character of next line 
+    lb $t2, buffer($s3)
+    beq $t2, 10, singleFuture3DigitHours # line ending, so the number of hours only has 1 digit
+    j doubleFuture3DigitHours # otherwise, assume that it's a 2-digit number of hours
+
+singleFuture3DigitHours:
+    subi $s3, $s3, 1 # previous character
+    lb $t2, buffer($s3) # load the previous character (only digit in the number of hours) to $t2
+    li $t3, 0 # initialize the count to 0
+    li $t4, 1 # digit is in the ones-column
+    jal asciiToInteger # add the digit to the hours count sum
+    
+    move $s4, $t3 # set the permanent register for the number of hours taken
+    j option3Calculation
+
+doubleFuture3DigitHours:
+    subi $s3, $s3, 1 # previous character
+    lb $t2, buffer($s3) # load the previous character (first digit in the number of hours) to $t2 
+    li $t3, 0 # initialize the count to 0
+    li $t4, 10 # first digit is in the tens-column
+    jal asciiToInteger # add the digit to the hours count sum
+    
+    addi $s3, $s3, 1 # second character
+    lb $t2, buffer($s3) # load the second character (second digit in the number of hours) to $t2
+    jal asciiToInteger # add the digit to the hours count sum
+    
+    move $s4, $t3 # set the permanent register for the number of hours
+    j option3Calculation
+
+option3Calculation:
+    sw $s4, -88($fp)
+    lwc1 $f14, -88($fp)
+    cvt.s.w $f15, $f14 # $f15 now holds the future credit hours
+    
+    sw $s7, -88($fp)
+    lwc1 $f14, -88($fp)
+    cvt.s.w $f16, $f14 # $f16 now holds the current credit hours
+
+    add.s $f17, $f16, $f15 # $f17 now holds the total credit hours
+    mul.s $f18, $f0, $f15 # $f18 = future GPA * future credit hours
+    mul.s $f19, $f1, $f16 # $f19 = current GPA * current credit hours
+    add.s $f20, $f18, $f19 # $f20 = (future GPA * future credit hours) + (current GPA * current credit hours)
+    div.s $f21, $f20, $f17 # $f21 = $f20 / total credit hours
+    mov.s $f12, $f21 # move it to $f12 for printing
+    
+    li $v0, 57 # syscall 57 is floating point message dialog
+    la $a0, option3Output
+    syscall
+
     j exit
 
 nextStep:
