@@ -76,7 +76,7 @@ doubleDigit:
 
 parseClasses:
     li $t6, 0 # number of classes, counting upwards (for memory write purposes)
-    li $t1, s7 # copy the number of classes
+    move $t1, $s7 # copy the number of classes
 
 readLoop:
     ble $t1, 0, nextStep # if there are no more classes remaining, leave the loop
