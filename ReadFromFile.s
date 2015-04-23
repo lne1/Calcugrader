@@ -6,6 +6,8 @@ filename: .asciiz "input.txt"
 buffer: .space 1024 
     .globl option1Output
 option1Output: .asciiz "Your GPA is: "
+    .globl option2Output
+option2Output: .asciiz "You need a GPA of: "
     .globl errorMess
 errorMess: .asciiz "Error encountered in input, exiting"
 
@@ -112,14 +114,133 @@ option1Calculation:
     syscall
 
 parseOption2:
-    li $s3, 3 # fourth character
     li $s7, 2 # remember that the chosen option is 2
+
+parseCurrentData:
+    li $s3, 2 # third character
     lb $t2, buffer($s3) # load the first digit of the GPA (first character of the line) to $t2
-    #li $f3, 0 # initialize the count to 0
-    #li $f4, 1 # first digit is in the ones-column
-    #jal asciiToFloat # translate the first digit to a number
+    li $t8, 0 # start the count at 0
+    sw $t8, -88($fp)
+    lwc1 $f14, -88($fp)
+    cvt.s.w $f3, $f14
+    li $t8, 1 # first digit is in the ones-column
+    sw $t8, -88($fp)
+    lwc1 $f14, -88($fp)
+    cvt.s.w $f4, $f14
+    jal asciiToFloat # translate the first digit to a number
     
+    li $s3, 4 # fifth character
+    lb $t2, buffer($s3) # load the second digit of the GPA (third character of the line) to $t2
+    jal asciiToFloat # translate the second digit to a number
+
+    li $s3, 5 # sixth character
+    lb $t2, buffer($s3) # load the third digit of the GPA (fourth character of the line) to $t2
+    jal asciiToFloat # translate the third digit to a number
+
+    mov.s $f1, $f3 # save the number in $f1
+
+    li $s3, 8 # ninth character
+    lb $t2, buffer($s3) # load the ninth character
+    beq $t2, 10, singleDigitHours # ninth character is a line ending, so the number of hours only has 1 digit
+    j doubleDigitHours # otherwise, assume that it's a 2-digit number of hours
+
+singleDigitHours:
+    subi $s3, $s3, 1 # previous character
+    lb $t2, buffer($s3) # load the previous character (only digit in the number of hours) to $t2
+    li $t3, 0 # initialize the count to 0
+    li $t4, 1 # digit is in the ones-column
+    jal asciiToInteger # add the digit to the hours count sum
     
+    move $s7, $t3 # set the permanent register for the number of hours taken
+    addi $s3, $s3, 2 # move to the next line
+    j parseFutureData
+
+doubleDigitHours:
+    subi $s3, $s3, 1 # previous character
+    lb $t2, buffer($s3) # load the previous character (first digit in the number of hours) to $t2 
+    li $t3, 0 # initialize the count to 0
+    li $t4, 10 # first digit is in the tens-column
+    jal asciiToInteger # add the digit to the hours count sum
+    
+    addi $s3, $s3, 1 # second character
+    lb $t2, buffer($s3) # load the second character (second digit in the number of hours) to $t2
+    jal asciiToInteger # add the digit to the hours count sum
+    
+    move $s7, $t3 # set the permanent register for the number of hours
+    addi $s3, $s3, 2 # move to the next line
+    j parseFutureData
+
+parseFutureData:
+    lb $t2, buffer($s3) # load the first digit of the GPA (first character of the line) to $t2
+    li $t8, 0 # start the count at 0
+    sw $t8, -88($fp)
+    lwc1 $f14, -88($fp)
+    cvt.s.w $f3, $f14
+    li $t8, 1 # first digit is in the ones-column
+    sw $t8, -88($fp)
+    lwc1 $f14, -88($fp)
+    cvt.s.w $f4, $f14
+    jal asciiToFloat # translate the first digit to a number
+    
+    addi $s3, $s3, 2 # next digit
+    lb $t2, buffer($s3) # load the second digit of the GPA (third character of the line) to $t2
+    jal asciiToFloat # translate the second digit to a number
+
+    addi $s3, $s3, 1 # next digit
+    lb $t2, buffer($s3) # load the third digit of the GPA (fourth character of the line) to $t2
+    jal asciiToFloat # translate the third digit to a number
+
+    mov.s $f0, $f3 # save the number in $f0
+
+    addi $s3, $s3, 3 # second character of next line 
+    lb $t2, buffer($s3)
+    beq $t2, 10, singleFutureDigitHours # line ending, so the number of hours only has 1 digit
+    j doubleFutureDigitHours # otherwise, assume that it's a 2-digit number of hours
+
+singleFutureDigitHours:
+    subi $s3, $s3, 1 # previous character
+    lb $t2, buffer($s3) # load the previous character (only digit in the number of hours) to $t2
+    li $t3, 0 # initialize the count to 0
+    li $t4, 1 # digit is in the ones-column
+    jal asciiToInteger # add the digit to the hours count sum
+    
+    move $s4, $t3 # set the permanent register for the number of hours taken
+    j option2Calculation
+
+doubleFutureDigitHours:
+    subi $s3, $s3, 1 # previous character
+    lb $t2, buffer($s3) # load the previous character (first digit in the number of hours) to $t2 
+    li $t3, 0 # initialize the count to 0
+    li $t4, 10 # first digit is in the tens-column
+    jal asciiToInteger # add the digit to the hours count sum
+    
+    addi $s3, $s3, 1 # second character
+    lb $t2, buffer($s3) # load the second character (second digit in the number of hours) to $t2
+    jal asciiToInteger # add the digit to the hours count sum
+    
+    move $s4, $t3 # set the permanent register for the number of hours
+    j option2Calculation
+
+option2Calculation:
+    sw $s4, -88($fp)
+    lwc1 $f14, -88($fp)
+    cvt.s.w $f15, $f14 # $f15 now holds the future credit hours
+    
+    sw $s7, -88($fp)
+    lwc1 $f14, -88($fp)
+    cvt.s.w $f16, $f14 # $f16 now holds the current credit hours
+
+    add.s $f17, $f16, $f15 # $f17 now holds the total credit hours
+    mul.s $f18, $f0, $f17 # $f18 = desired GPA * total credit hours
+    mul.s $f19, $f1, $f16 # $f19 = current GPA * current credit hours
+    sub.s $f20, $f18, $f19 # $f20 = (desired GPA * total credit hours) - (current GPA * current credit hours)
+    div.s $f21, $f20, $f15 # $f21 = $f20 / future credit hours
+    mov.s $f12, $f21 # move it to $f12 for printing
+    
+    li $v0, 57 # syscall 57 is floating point message dialog
+    la $a0, option2Output
+    syscall
+    j exit
 
 parseOption3:
     li $s7, 3 # remember that the chosen option is 3
@@ -196,72 +317,108 @@ cleanupAddition:
     div $t4, $t4, 10
     jr $ra
 
-# overwrites $f5
+# overwrites $f5, $t8, $f13, $f14
 # assumes that it was called by a jal, that $t2 contains the ASCII of the next digit to be converted, $f3 contains the running sum, and $f4 contains the exponent of this multiplication
-# divides $f4 by 10
-#asciiToFloat:
-#    mulu $f5, $f4, 10
-#    beq $t2, 48, asciiFloat0
-#    beq $t2, 49, asciiFloat1
-#    beq $t2, 50, asciiFloat2
-#    beq $t2, 51, asciiFloat3
-#    beq $t2, 52, asciiFloat4
-#    beq $t2, 53, asciiFloat5
-#    beq $t2, 54, asciiFloat6
-#    beq $t2, 55, asciiFloat7
-#    beq $t2, 56, asciiFloat8
-#    beq $t2, 57, asciiFloat9
+# divides $t4 by 10
+asciiToFloat:
+    mov.s $f5, $f4
+    beq $t2, 48, asciiFloat0
+    beq $t2, 49, asciiFloat1
+    beq $t2, 50, asciiFloat2
+    beq $t2, 51, asciiFloat3
+    beq $t2, 52, asciiFloat4
+    beq $t2, 53, asciiFloat5
+    beq $t2, 54, asciiFloat6
+    beq $t2, 55, asciiFloat7
+    beq $t2, 56, asciiFloat8
+    beq $t2, 57, asciiFloat9
 
-#asciiFloat0:
-#    j cleanupFloatAddition
+asciiFloat0:
+    j cleanupFloatAddition
 
-#asciiFloat1:
-#    add $f3, $f3, $f5 # add exponent to the sum
-#    j cleanupFloatAddition
+asciiFloat1:
+    add.s $f3, $f3, $f5 # add exponent to the sum
+    j cleanupFloatAddition
 
-#asciiFloat2:
-#    mulu $f5, $f5, 2 # multiply exponent by 2
-#    add $f3, $f3, $f5 # add exponent to sum
-#    j cleanupFloatAddition
+asciiFloat2:
+    li $t8, 2
+    sw $t8, -88($fp)
+    lwc1 $f14, -88($fp)
+    cvt.s.w $f13, $f14
+    mul.s $f5, $f5, $f13 # multiply exponent by 2
+    add.s $f3, $f3, $f5 # add exponent to sum
+    j cleanupFloatAddition
 
-#asciiFloat3:
-#    mulu $f5, $f5, 3 # multiply exponent by 3
-#    add $f3, $f3, $f5 # add exponent to sum
-#    j cleanupFloatAddition
+asciiFloat3:
+    li $t8, 3
+    sw $t8, -88($fp)
+    lwc1 $f14, -88($fp)
+    cvt.s.w $f13, $f14
+    mul.s $f5, $f5, $f13 # multiply exponent by 3
+    add.s $f3, $f3, $f5 # add exponent to sum
+    j cleanupFloatAddition
 
-#asciiFloat4:
-#    mulu $f5, $f5, 4 # multiply exponent by 4
-#    add $f3, $f3, $f5 # add exponent to sum
-#    j cleanupFloatAddition
+asciiFloat4:
+    li $t8, 4
+    sw $t8, -88($fp)
+    lwc1 $f14, -88($fp)
+    cvt.s.w $f13, $f14
+    mul.s $f5, $f5, $f13 # multiply exponent by 4
+    add.s $f3, $f3, $f5 # add exponent to sum
+    j cleanupFloatAddition
 
-#asciiFloat5:
-#    mulu $f5, $f5, 5 # multiply exponent by 5
-#    add $f3, $f3, $t5 # add exponent to sum
-#    j cleanupFloatAddition
+asciiFloat5:
+    li $t8, 5
+    sw $t8, -88($fp)
+    lwc1 $f14, -88($fp)
+    cvt.s.w $f13, $f14
+    mul.s $f5, $f5, $f13 # multiply exponent by 5
+    add.s $f3, $f3, $f5 # add exponent to sum
+    j cleanupFloatAddition
 
-#asciiFloat6:
-#    mulu $f5, $f5, 6 # multiply exponent by 6
-#    add $f3, $f3, $f5 # add exponent to sum
-#    j cleanupFloatAddition
+asciiFloat6:
+    li $t8, 6
+    sw $t8, -88($fp)
+    lwc1 $f14, -88($fp)
+    cvt.s.w $f13, $f14
+    mul.s $f5, $f5, $f13 # multiply exponent by 6
+    add.s $f3, $f3, $f5 # add exponent to sum
+    j cleanupFloatAddition
 
-#asciiFloat7:
-#    mulu $f5, $f5, 7 # multiply exponent by 7
-#    add $f3, $f3, $f5 # add exponent to sum
-#    j cleanupFloatAddition
+asciiFloat7:
+    li $t8, 7
+    sw $t8, -88($fp)
+    lwc1 $f14, -88($fp)
+    cvt.s.w $f13, $f14
+    mul.s $f5, $f5, $f13 # multiply exponent by 7
+    add.s $f3, $f3, $f5 # add exponent to sum
+    j cleanupFloatAddition
 
-#asciiFloat8:
-#    mulu $f5, $f5, 8 # multiply exponent by 8
-#    add $f3, $f3, $f5 # add exponent to sum
-#    j cleanupFloatAddition
+asciiFloat8:
+    li $t8, 8
+    sw $t8, -88($fp)
+    lwc1 $f14, -88($fp)
+    cvt.s.w $f13, $f14
+    mul.s $f5, $f5, $f13 # multiply exponent by 8
+    add.s $f3, $f3, $f5 # add exponent to sum
+    j cleanupFloatAddition
 
-#asciiFloat9:
-#    mulu $f5, $f5, 9 # multiply exponent by 9
-#    add $f3, $f3, $f5 # add exponent to sum
-#    j cleanupFloatAddition
+asciiFloat9:
+    li $t8, 9
+    sw $t8, -88($fp)
+    lwc1 $f14, -88($fp)
+    cvt.s.w $f13, $f14
+    mul.s $f5, $f5, $f13 # multiply exponent by 9
+    add.s $f3, $f3, $f5 # add exponent to sum
+    j cleanupFloatAddition
 
-#cleanupFloatAddition:
-#    div $f4, $f4, 10
-#    jr $ra
+cleanupFloatAddition:
+    li $t8, 10
+    sw $t8, -88($fp)
+    lwc1 $f14, -88($fp)
+    cvt.s.w $f13, $f14
+    div.s $f4, $f4, $f13
+    jr $ra
 
 # this is just for debugging (for now)
 printSomething:
