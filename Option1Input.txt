@@ -1,0 +1,5 @@
+1          //Option 1
+3          //3 classes
+4,3        //4 credit hours, received a B
+2,0        //2 credit hours, received an F
+5,4        //5 credit hours, received an A
