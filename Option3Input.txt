@@ -1,5 +1,5 @@
-3          //Option 3
-3.21       //Current GPA
-12         //Credit hours already taken
-3.70       //Predicted future GPA
-112        //Future credit hours
+3
+3.21
+12
+3.70
+50

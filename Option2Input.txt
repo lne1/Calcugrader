@@ -1,5 +1,5 @@
-2          //Option 2
-3.21       //current GPA
-66         //credit hours already taken
-3.44       //desired credit hours
-30         //credit hours remaining until graduation
+2
+3.21
+12
+3.70
+50
