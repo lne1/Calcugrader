@@ -102,6 +102,7 @@ readLoop:
     j readLoop
 
 option1Calculation:
+    # citation: http://stackoverflow.com/questions/10696543/convert-int-to-float-in-mips-assembly (I reuse this snippet a lot of times)
     sw   $s1, -88($fp) # these 3 lines convert the credit hours number to float register $f7
     lwc1 $f6, -88($fp)
     cvt.s.w $f7, $f6
